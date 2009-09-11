@@ -9,6 +9,7 @@
     - Should we point to specific versions of artifacts we're installing or
       upgrading? Or should these be specified at deployment time?
     - How do we survive errors? (which are guaranteed to occur at some point)
+    - Prompting the user for input at deployment time.
 -->
 
 <application>
