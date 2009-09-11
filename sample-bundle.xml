@@ -92,26 +92,26 @@
 	    <!-- theoretically, these should run in the order the deps/requires tsort's out
 	         to. They could also potentially run at the same time...? otherwise assume to
 	         run in parse order...? !-->
-	    <step>
-                <perform action="disablePuppetd">
+	        <step>
+                <perform-action id="disablePuppetd">
                     <target systemtag="some.webapp.database"/>
                     <target systemtag="some.webapp.appServer"/>
                     <target systemtag="some.webapp.loadBalancer"/>
-                </perform>
+                </perform-action>
             </step>
 
             <step>
-                <perform action="backupDatabases">
+                <perform-action id="backupDatabases">
                     <target systemtag="some.webapp.database"/>
-                </perform>
+                </perform-action>
             </step>
 
             <step>
-                <perform action="upgradeAppServers">
+                <perform-action id="upgradeAppServers">
                     <!-- TODO: Must pass in load balancer to remove app server 
                       from it during upgrade. -->
                     <target systemtag="some.webapp.appServer"/>
-                </perform>
+                </perform-action>
             </step>
 	   </requires>
 
