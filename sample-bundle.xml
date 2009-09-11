@@ -3,6 +3,12 @@
 <!-- 
   Random thoughts:
     - Parts of this are really drifting towards a workflow language like jBPM.
+
+  TODO:
+    - How can we reconcile Puppet metadata into this?
+    - Should we point to specific versions of artifacts we're installing or
+      upgrading? Or should these be specified at deployment time?
+    - How do we survive errors? (which are guaranteed to occur at some point)
 -->
 
 <application>
@@ -63,17 +69,40 @@
             </script>
         </action>
 
+        <action id="shutDownWebapp" subclass="baseAction" host="some.webapp.appServer">
+            <require-action id="removeFromLoadBalancer"></require-action>
+            <script>
+                #!/bin/bash
+                # why be subtle
+                kill -9 webapp
+            </script>
+        </action>
+
         <action id="upgradeAppServers">
             <!-- TODO: Should we do this here or assume the larger operation 
               handles it? I was thinking this action is internally executed 
               once for each system in the target systemtag. Given there's
               probably only one database server we don't want to repeat 
               the dependency here. (but my assumption may need to change) -->
-            <require-action id="backupDatabase" systemtag="some.webapp.database"></require-action>
-            <!-- TODO: how to nest multi-step actions? -->
+            <require-action id="backupDatabase"></require-action>
+
+            <!-- Assume the system tag we're executing on is passed along to a 
+              dependent action. -->
+            <require-action id="shutDownWebapp"/>
+
+            <!-- TODO: How do we identify specific artifacts? Should versions be referenced
+              here or at runtime? How do we incorporate channels/repos? -->
+            <install>
+                <zip name="myWebApp" version="1.5.3"/>
+            </install>
+
+            <require-action id="startWebapp"/>
+
         </action>
 
-        <action id="takeoutLoadBalancer">
+        <!-- TODO: How do we know where the load balancer is if we're called as a dependency for an
+          action whose target is the app servers? Should actions themselves define their targets? -->
+        <action id="removeFromLoadBalancer">
             <script>
             #!/usr/bin/python
             import abe
@@ -81,14 +110,6 @@
             </script>
         </action>
 
-        <action id="shutDownWebapp" subclass="baseAction" host="some.webapp.appServer">
-            <require-action id="takeoutLoadbalancer"></require-action>
-            <script>
-                #!/bin/bash
-                # why be subtle
-                kill -9 webapp
-            </script>
-        </action>
 
     </actions>
 
