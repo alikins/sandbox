@@ -25,21 +25,28 @@
       Assume actions are always called with a target system tag which could 
       match multiple systems. In this case the action is run once per system
       sequentially. (perhaps we could add an option to run in parallel if it's
-      safe to do so)
+      safe to do so) Note that this is passed by the caller and only goes to 
+      Jopr so we know which node(s) to execute the given action on.
+
+      Possible action types: shell/Python script, Java class
+
+
+      TODO:
+      How can we pass actual parameters into actions? Passing to Java class 
+      would be relatively easy, but to Python/shell I'm really not sure how.
     -->
     <actions>
 
-        <!-- TODO: Need a parameter passing mechanism, similar for return values. -->
 
         <action id="disablePuppetd">
             <cmd>service puppetd stop</cmd>
         </action>
 
-	<action id="baseAction">
-		<require-action id="disablePuppetd"></require-action>
-	</action>
+        <action id="baseAction">
+            <require-action id="disablePuppetd"></require-action>
+        </action>
 
-        <action id="backupDatabases" subclass="baseAction" systemtag="">
+        <action id="backupDatabases" subclass="baseAction">
             <!-- since we subclass "baseAction" we also require "disablePuppetd" -->
 
             <!-- TODO: Should this involve the installation of some artifact? -->
@@ -53,26 +60,31 @@
         </action>
 
         <action id="upgradeAppServers">
+            <!-- TODO: Should we do this here or assume the larger operation 
+              handles it? I was thinking this action is internally executed 
+              once for each system in the target systemtag. Given there's
+              probably only one database server we don't want to repeat 
+              the dependency here. (but my assumption may need to change) -->
             <require-action id="backupDatabase" systemtag="some.webapp.database"></require-action>
             <!-- TODO: how to nest multi-step actions? -->
         </action>
 
-	<action id="takeoutLoadBalancer">
-		<script>
-		#!/usr/bin/python
-		import abe
-		abe.load_balancer.remove("some.webapp.appServer")
-		</script>
-	</action>
+        <action id="takeoutLoadBalancer">
+            <script>
+            #!/usr/bin/python
+            import abe
+            abe.load_balancer.remove("some.webapp.appServer")
+            </script>
+        </action>
 
-	<action id="shutDownWebapp" subclass="baseAction" host="some.webapp.appServer">
-		<require-action id="takeoutLoadbalancer"></require-action>
-		<script>
-			#!/bin/bash
-			# why be subtle
-			kill -9 webapp
-		</script>
-	</action>
+        <action id="shutDownWebapp" subclass="baseAction" host="some.webapp.appServer">
+            <require-action id="takeoutLoadbalancer"></require-action>
+            <script>
+                #!/bin/bash
+                # why be subtle
+                kill -9 webapp
+            </script>
+        </action>
 
     </actions>
 
