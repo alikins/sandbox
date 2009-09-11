@@ -17,7 +17,7 @@
         </systemtag>
         <systemtag id="some.webapp.loadBalancer" mincount="1" maxcount="1">
         </systemtag>
-    </systemtags>
+    </systemtags> 
 
     <!-- 
       Small components we can re-use inside the larger user visible 'operations'. 
@@ -35,8 +35,15 @@
             <cmd>service puppetd stop</cmd>
         </action>
 
-        <action id="backupDatabases">
+	<action id="baseAction">
+		<require-action id="disablePuppetd"></require-action>
+	</action>
+
+        <action id="backupDatabases" subclass="baseAction" systemtag="">
+            <!-- since we subclass "baseAction" we also require "disablePuppetd" -->
+
             <!-- TODO: Should this involve the installation of some artifact? -->
+
             <script>
                 <!-- Can envision lots of types here, fetch a script from git/svn at a specified
                   revision, execute a Java action. -->
@@ -46,8 +53,26 @@
         </action>
 
         <action id="upgradeAppServers">
+            <require-action id="backupDatabase" systemtag="some.webapp.database"></require-action>
             <!-- TODO: how to nest multi-step actions? -->
         </action>
+
+	<action id="takeoutLoadBalancer">
+		<script>
+		#!/usr/bin/python
+		import abe
+		abe.load_balancer.remove("some.webapp.appServer")
+		</script>
+	</action>
+
+	<action id="shutDownWebapp" subclass="baseAction" host="some.webapp.appServer">
+		<require-action id="takeoutLoadbalancer"></require-action>
+		<script>
+			#!/bin/bash
+			# why be subtle
+			kill -9 webapp
+		</script>
+	</action>
 
     </actions>
 
@@ -64,7 +89,10 @@
 
         <operation id="update">
 
-            <step rank="1">
+	    <!-- theoretically, these should run in the order the deps/requires tsort's out
+	         to. They could also potentially run at the same time...? otherwise assume to
+	         run in parse order...? !-->
+	    <step>
                 <perform action="disablePuppetd">
                     <target systemtag="some.webapp.database"/>
                     <target systemtag="some.webapp.appServer"/>
@@ -72,19 +100,20 @@
                 </perform>
             </step>
 
-            <step rank="2">
+            <step>
                 <perform action="backupDatabases">
                     <target systemtag="some.webapp.database"/>
                 </perform>
             </step>
 
-            <step rank="2">
+            <step>
                 <perform action="upgradeAppServers">
                     <!-- TODO: Must pass in load balancer to remove app server 
                       from it during upgrade. -->
                     <target systemtag="some.webapp.appServer"/>
                 </perform>
             </step>
+	   </requires>
 
         </operation>
     </operations>
