@@ -1,0 +1,92 @@
+<?xml version='1.0' encoding='utf-8'?>
+
+<!-- 
+  Random thoughts:
+    - Parts of this are really drifting towards a workflow language like jBPM.
+-->
+
+<application>
+    <name>Some JBoss Webapp</name>
+
+    <!-- Define the broad system roles involved in a deployment of this 
+      application and how many we require/support. These will be selected
+      or created when deploying. -->
+    <systemtags>
+        <systemtag id="some.webapp.database" maxcount="1" mincount="1"/>
+        <systemtag id="some.webapp.appServer" mincount="1">
+        </systemtag>
+        <systemtag id="some.webapp.loadBalancer" mincount="1" maxcount="1">
+        </systemtag>
+    </systemtags>
+
+    <!-- 
+      Small components we can re-use inside the larger user visible 'operations'. 
+
+      Assume actions are always called with a target system tag which could 
+      match multiple systems. In this case the action is run once per system
+      sequentially. (perhaps we could add an option to run in parallel if it's
+      safe to do so)
+    -->
+    <actions>
+
+        <!-- TODO: Need a parameter passing mechanism, similar for return values. -->
+
+        <action id="disablePuppetd">
+            <cmd>service puppetd stop</cmd>
+        </action>
+
+        <action id="backupDatabases">
+            <!-- TODO: Should this involve the installation of some artifact? -->
+            <script>
+                <!-- Can envision lots of types here, fetch a script from git/svn at a specified
+                  revision, execute a Java action. -->
+                #!/bin/sh
+                # DO STUFF TO UPGRADE DB HERE
+            </script>
+        </action>
+
+        <action id="upgradeAppServers">
+            <!-- TODO: how to nest multi-step actions? -->
+        </action>
+
+    </actions>
+
+    <operations>
+
+        <operation id="deploy">
+
+            <!-- TODO:
+              Can we get puppet configs in here somehow?
+            -->
+
+
+        </operation>
+
+        <operation id="update">
+
+            <step rank="1">
+                <perform action="disablePuppetd">
+                    <target systemtag="some.webapp.database"/>
+                    <target systemtag="some.webapp.appServer"/>
+                    <target systemtag="some.webapp.loadBalancer"/>
+                </perform>
+            </step>
+
+            <step rank="2">
+                <perform action="backupDatabases">
+                    <target systemtag="some.webapp.database"/>
+                </perform>
+            </step>
+
+            <step rank="2">
+                <perform action="upgradeAppServers">
+                    <!-- TODO: Must pass in load balancer to remove app server 
+                      from it during upgrade. -->
+                    <target systemtag="some.webapp.appServer"/>
+                </perform>
+            </step>
+
+        </operation>
+    </operations>
+
+</application>
