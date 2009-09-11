@@ -34,6 +34,10 @@
       TODO:
       How can we pass actual parameters into actions? Passing to Java class 
       would be relatively easy, but to Python/shell I'm really not sure how.
+
+      Perhaps we could get a little crazy and modify the scripts on the fly
+      before sending them to the client to populate variables defined here.
+      Not hard to inject SOMEVARIABLE=STRING at the start of the script text.
     -->
     <actions>
 
