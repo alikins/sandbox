@@ -15,27 +15,19 @@
 <application>
     <name>Some JBoss Webapp</name>
 
-    <os>
-        <!-- TODO: How should we define OS requirements? 
-
-          - Define a kickstart (or enough for one) here?
-          - Blacklist/whitelist OS versions?
-          - May want to install application on a pre-existing system...
-          - OS reqs need to be defined per systemtag.
-
-        -->
-    </os>
-
-    <!-- Define the broad system roles involved in a deployment of this 
-      application and how many we require/support. These will be selected
-      or created when deploying. -->
+    <!-- 
+      System tags define the broad system roles involved in the deployment 
+      of this application, how many are required, and how many are supported.
+      Actual systems will be created/selected at runtime.
+    -->
     <systemtags>
         <systemtag id="some.webapp.database" maxcount="1" mincount="1">
+
+            <!-- 
+              List supported and unsupported operating systems. User to prompt
+              for a Cobbler profile at runtime.
+            -->
             <os-requirements>
-                <!-- 
-                  Use this info to present user with suitable Cobbler profiles
-                  at deployment time.
-                -->
                 <supported>
                     <os>
                         <type>linux</type>
@@ -46,12 +38,43 @@
                         </versions>
                     </os>
                 </supported>
+                <!-- TODO: Would an unsupported be useful? -->
             </os-requirements>
         </systemtag>
 
         <systemtag id="some.webapp.appServer" mincount="1">
+            <os-requirements>
+                <supported>
+                    <os>
+                        <type>linux</type>
+                        <variant>rhel</variant>
+                        <versions>
+                            <version>4</version>
+                            <version>5</version>
+                        </versions>
+                    </os>
+                    <os>
+                        <type>linux</type>
+                        <variant>fedora</variant>
+                        <versions>
+                            <version>10</version>
+                        </versions>
+                    </os>
+                </supported>
+            </os-requirements>
         </systemtag>
         <systemtag id="some.webapp.loadBalancer" mincount="1" maxcount="1">
+            <os-requirements>
+                <supported>
+                    <os>
+                        <type>linux</type>
+                        <variant>rhel</variant>
+                        <versions>
+                            <version>5</version>
+                        </versions>
+                    </os>
+                </supported>
+            </os-requirements>
         </systemtag>
     </systemtags> 
 
@@ -109,13 +132,6 @@
         </action>
 
         <action id="upgradeAppServers">
-            <!-- TODO: Should we do this here or assume the larger operation 
-              handles it? I was thinking this action is internally executed 
-              once for each system in the target systemtag. Given there's
-              probably only one database server we don't want to repeat 
-              the dependency here. (but my assumption may need to change) -->
-            <require-action id="backupDatabase"></require-action>
-
             <!-- Assume the system tag we're executing on is passed along to a 
               dependent action. -->
             <require-action id="shutDownWebapp"/>
