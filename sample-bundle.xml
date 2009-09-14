@@ -15,6 +15,16 @@
 <application>
     <name>Some JBoss Webapp</name>
 
+    <os>
+        <!-- TODO: How should we define OS requirements? 
+
+          - Define a kickstart (or enough for one) here?
+          - Blacklist/whitelist OS versions?
+          - May want to install application on a pre-existing system...
+
+        -->
+    </os>
+
     <!-- Define the broad system roles involved in a deployment of this 
       application and how many we require/support. These will be selected
       or created when deploying. -->
