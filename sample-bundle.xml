@@ -40,6 +40,10 @@
                 </supported>
                 <!-- TODO: Would an unsupported be useful? -->
             </os-requirements>
+            <hardware>
+                <ram min="512M"/>
+                <disk>20G</disk>
+            </hardware>
         </systemtag>
 
         <systemtag id="some.webapp.appServer" mincount="1">
@@ -100,6 +104,8 @@
     -->
     <actions>
 
+        <!-- TODO: Reconcile requires and subclasses, they seem like exactly 
+          the same thing to me. -->
 
         <action id="disablePuppetd">
             <cmd>service puppetd stop</cmd>
