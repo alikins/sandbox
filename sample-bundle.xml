@@ -34,7 +34,8 @@
             <os-requirements>
                 <!-- 
                   Use this info to present user with suitable Cobbler profiles
-                  at deployment time.
+                  at deployment time. And/or an image. And/or an existing running
+                  system instance. 
                 -->
                 <supported>
                     <os>
@@ -47,6 +48,12 @@
                     </os>
                 </supported>
             </os-requirements>
+
+	 <!-- define puppet classes for the general machine types here? 
+	      Or would that be drive by systemtags? -->
+	  <class>linux</class>
+	  <class>database</class>
+	  <class>devel</class>
         </systemtag>
 
         <systemtag id="some.webapp.appServer" mincount="1">
@@ -91,6 +98,7 @@
 
             <!-- TODO: Should this involve the installation of some artifact? -->
 
+	   
             <script>
                 <!-- Can envision lots of types here, fetch a script from git/svn at a specified
                   revision, execute a Java action. -->
@@ -102,11 +110,51 @@
         <action id="shutDownWebapp" subclass="baseAction" host="some.webapp.appServer">
             <require-action id="removeFromLoadBalancer"></require-action>
             <script>
+            	<!-- should be CDATA/etc if this were real xml, but meh...-->
                 #!/bin/bash
                 # why be subtle
                 kill -9 webapp
             </script>
         </action>
+
+	<!-- in addtion to scripts, we could define some basic config classes here. Some
+	     examples could be a func method call... !-->
+
+	<action id="AppServerFuncCallExample">
+		<script type="func">
+			<host>some.webapp.database</host>
+			<method>somefuncmodule.somefuncmethod</method>
+			<args>
+				<string>blippy</string>
+				<string>foobar</string>
+			</args>
+		<script>
+
+	</action>
+
+	<!-- or possibly ovf style CIM queries ??  -->
+	<action id="AppServerCIMExample">
+		<script type="CIM">
+			<Property key="httpPort" ovf:type="uint16" ovf:value="80"
+			   	userConfigurable="true">
+			        <Description>Port number for HTTP requests</Description>
+			</Property>
+		</script>
+	</action>
+
+
+	<!-- RHQ/JOPR agent server plugin stuff, however we get to that... -->	
+	<action id="AppServerJoprAgentExample">
+		<script type="jopr">
+			<name>HttpdOnUnix</name>
+				<properties>
+					<name>ServerRoot</name>
+					<value>/var/www/html/blippy</value>
+				</properties>
+		</script>
+	<action>
+
+
 
         <action id="upgradeAppServers">
             <!-- TODO: Should we do this here or assume the larger operation 
@@ -153,6 +201,8 @@
               Could reference artifacts + a custom script to install them, as well as puppet specific
               recipies/modules if the developer prefers.
             -->
+
+		
 
 
         </operation>
