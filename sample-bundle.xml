@@ -21,6 +21,7 @@
           - Define a kickstart (or enough for one) here?
           - Blacklist/whitelist OS versions?
           - May want to install application on a pre-existing system...
+          - OS reqs need to be defined per systemtag.
 
         -->
     </os>
@@ -29,7 +30,25 @@
       application and how many we require/support. These will be selected
       or created when deploying. -->
     <systemtags>
-        <systemtag id="some.webapp.database" maxcount="1" mincount="1"/>
+        <systemtag id="some.webapp.database" maxcount="1" mincount="1">
+            <os-requirements>
+                <!-- 
+                  Use this info to present user with suitable Cobbler profiles
+                  at deployment time.
+                -->
+                <supported>
+                    <os>
+                        <type>linux</type>
+                        <variant>rhel</variant>
+                        <versions>
+                            <version>4</version>
+                            <version>5</version>
+                        </versions>
+                    </os>
+                </supported>
+            </os-requirements>
+        </systemtag>
+
         <systemtag id="some.webapp.appServer" mincount="1">
         </systemtag>
         <systemtag id="some.webapp.loadBalancer" mincount="1" maxcount="1">
