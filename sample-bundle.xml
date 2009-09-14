@@ -130,6 +130,9 @@
 
             <!-- TODO:
               Can we get puppet configs in here somehow?
+
+              Could reference artifacts + a custom script to install them, as well as puppet specific
+              recipies/modules if the developer prefers.
             -->
 
 
