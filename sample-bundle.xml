@@ -3,16 +3,52 @@
 <!-- 
   Random thoughts:
     - Parts of this are really drifting towards a workflow language like jBPM.
+
+  TODO:
+    - How can we reconcile Puppet metadata into this?
+    - Should we point to specific versions of artifacts we're installing or
+      upgrading? Or should these be specified at deployment time?
+    - How do we survive errors? (which are guaranteed to occur at some point)
+    - Prompting the user for input at deployment time.
 -->
 
 <application>
     <name>Some JBoss Webapp</name>
 
+    <os>
+        <!-- TODO: How should we define OS requirements? 
+
+          - Define a kickstart (or enough for one) here?
+          - Blacklist/whitelist OS versions?
+          - May want to install application on a pre-existing system...
+          - OS reqs need to be defined per systemtag.
+
+        -->
+    </os>
+
     <!-- Define the broad system roles involved in a deployment of this 
       application and how many we require/support. These will be selected
       or created when deploying. -->
     <systemtags>
-        <systemtag id="some.webapp.database" maxcount="1" mincount="1"/>
+        <systemtag id="some.webapp.database" maxcount="1" mincount="1">
+            <os-requirements>
+                <!-- 
+                  Use this info to present user with suitable Cobbler profiles
+                  at deployment time.
+                -->
+                <supported>
+                    <os>
+                        <type>linux</type>
+                        <variant>rhel</variant>
+                        <versions>
+                            <version>4</version>
+                            <version>5</version>
+                        </versions>
+                    </os>
+                </supported>
+            </os-requirements>
+        </systemtag>
+
         <systemtag id="some.webapp.appServer" mincount="1">
         </systemtag>
         <systemtag id="some.webapp.loadBalancer" mincount="1" maxcount="1">
@@ -25,21 +61,32 @@
       Assume actions are always called with a target system tag which could 
       match multiple systems. In this case the action is run once per system
       sequentially. (perhaps we could add an option to run in parallel if it's
-      safe to do so)
+      safe to do so) Note that this is passed by the caller and only goes to 
+      Jopr so we know which node(s) to execute the given action on.
+
+      Possible action types: shell/Python script, Java class
+
+
+      TODO:
+      How can we pass actual parameters into actions? Passing to Java class 
+      would be relatively easy, but to Python/shell I'm really not sure how.
+
+      Perhaps we could get a little crazy and modify the scripts on the fly
+      before sending them to the client to populate variables defined here.
+      Not hard to inject SOMEVARIABLE=STRING at the start of the script text.
     -->
     <actions>
 
-        <!-- TODO: Need a parameter passing mechanism, similar for return values. -->
 
         <action id="disablePuppetd">
             <cmd>service puppetd stop</cmd>
         </action>
 
-	<action id="baseAction">
-		<require-action id="disablePuppetd"></require-action>
-	</action>
+        <action id="baseAction">
+            <require-action id="disablePuppetd"></require-action>
+        </action>
 
-        <action id="backupDatabases" subclass="baseAction" systemtag="">
+        <action id="backupDatabases" subclass="baseAction">
             <!-- since we subclass "baseAction" we also require "disablePuppetd" -->
 
             <!-- TODO: Should this involve the installation of some artifact? -->
@@ -52,27 +99,47 @@
             </script>
         </action>
 
-        <action id="upgradeAppServers">
-            <require-action id="backupDatabase" systemtag="some.webapp.database"></require-action>
-            <!-- TODO: how to nest multi-step actions? -->
+        <action id="shutDownWebapp" subclass="baseAction" host="some.webapp.appServer">
+            <require-action id="removeFromLoadBalancer"></require-action>
+            <script>
+                #!/bin/bash
+                # why be subtle
+                kill -9 webapp
+            </script>
         </action>
 
-	<action id="takeoutLoadBalancer">
-		<script>
-		#!/usr/bin/python
-		import abe
-		abe.load_balancer.remove("some.webapp.appServer")
-		</script>
-	</action>
+        <action id="upgradeAppServers">
+            <!-- TODO: Should we do this here or assume the larger operation 
+              handles it? I was thinking this action is internally executed 
+              once for each system in the target systemtag. Given there's
+              probably only one database server we don't want to repeat 
+              the dependency here. (but my assumption may need to change) -->
+            <require-action id="backupDatabase"></require-action>
 
-	<action id="shutDownWebapp" subclass="baseAction" host="some.webapp.appServer">
-		<require-action id="takeoutLoadbalancer"></require-action>
-		<script>
-			#!/bin/bash
-			# why be subtle
-			kill -9 webapp
-		</script>
-	</action>
+            <!-- Assume the system tag we're executing on is passed along to a 
+              dependent action. -->
+            <require-action id="shutDownWebapp"/>
+
+            <!-- TODO: How do we identify specific artifacts? Should versions be referenced
+              here or at runtime? How do we incorporate channels/repos? -->
+            <install>
+                <zip name="myWebApp" version="1.5.3"/>
+            </install>
+
+            <require-action id="startWebapp"/>
+
+        </action>
+
+        <!-- TODO: How do we know where the load balancer is if we're called as a dependency for an
+          action whose target is the app servers? Should actions themselves define their targets? -->
+        <action id="removeFromLoadBalancer">
+            <script>
+            #!/usr/bin/python
+            import abe
+            abe.load_balancer.remove("some.webapp.appServer")
+            </script>
+        </action>
+
 
     </actions>
 
@@ -82,6 +149,9 @@
 
             <!-- TODO:
               Can we get puppet configs in here somehow?
+
+              Could reference artifacts + a custom script to install them, as well as puppet specific
+              recipies/modules if the developer prefers.
             -->
 
 
@@ -92,26 +162,26 @@
 	    <!-- theoretically, these should run in the order the deps/requires tsort's out
 	         to. They could also potentially run at the same time...? otherwise assume to
 	         run in parse order...? !-->
-	    <step>
-                <perform action="disablePuppetd">
+	        <step>
+                <perform-action id="disablePuppetd">
                     <target systemtag="some.webapp.database"/>
                     <target systemtag="some.webapp.appServer"/>
                     <target systemtag="some.webapp.loadBalancer"/>
-                </perform>
+                </perform-action>
             </step>
 
             <step>
-                <perform action="backupDatabases">
+                <perform-action id="backupDatabases">
                     <target systemtag="some.webapp.database"/>
-                </perform>
+                </perform-action>
             </step>
 
             <step>
-                <perform action="upgradeAppServers">
+                <perform-action id="upgradeAppServers">
                     <!-- TODO: Must pass in load balancer to remove app server 
                       from it during upgrade. -->
                     <target systemtag="some.webapp.appServer"/>
-                </perform>
+                </perform-action>
             </step>
 	   </requires>
 
