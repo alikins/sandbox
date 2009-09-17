@@ -10,6 +10,7 @@
       upgrading? Or should these be specified at deployment time?
     - How do we survive errors? (which are guaranteed to occur at some point)
     - Prompting the user for input at deployment time.
+    - Any embedded user visible text we'll probably want I18N'ized.
 -->
 
 <application>
@@ -22,6 +23,9 @@
     -->
     <systemtags>
         <systemtag id="some.webapp.database" maxcount="1" mincount="1">
+
+            <!-- Used when prompting user for systems to create/use during deployment. -->
+            <description>System that will run the database server for our application.</description>
 
             <!-- 
               List supported and unsupported operating systems. User to prompt
@@ -53,6 +57,7 @@
         </systemtag>
 
         <systemtag id="some.webapp.appServer" mincount="1">
+            <description>System that can be used as a clustered JBoss Application Server.</description>
             <os-requirements>
                 <supported>
                     <os>
@@ -74,6 +79,7 @@
             </os-requirements>
         </systemtag>
         <systemtag id="some.webapp.loadBalancer" mincount="1" maxcount="1">
+            <description>System that can be used as an http load balancer.</description>
             <os-requirements>
                 <supported>
                     <os>
@@ -221,12 +227,30 @@
 
         <operation id="deploy">
 
-            <!-- TODO:
-              Can we get puppet configs in here somehow?
+            <questions>
 
-              Could reference artifacts + a custom script to install them, as well as puppet specific
-              recipies/modules if the developer prefers.
-            -->
+                <!-- 
+                    - Assume the system knows someone must select systems to deploy too already. 
+                    - Questions can be partially answered by a sysadmin before making the application
+                      available for self-service deployment.
+                -->
+
+                <question id="applicationName">
+                    <prompt>Application Name</prompt>
+                    <type>string</type>
+                </question>
+
+                <question id="initialUserLogin">
+                    <prompt>Initial User</prompt>
+                    <type>string</type>
+                </question>
+
+                <question id="initialUserPassword">
+                    <prompt>Initial User Password</prompt>
+                    <type>password</type>
+                </question>
+
+            </questions>
         </operation>
 
         <operation id="update">
