@@ -110,19 +110,12 @@
     -->
     <actions>
 
-        <!-- TODO: Reconcile requires and subclasses, they seem like exactly 
-          the same thing to me. -->
-
         <action id="disablePuppetd">
             <cmd>service puppetd stop</cmd>
         </action>
 
-        <action id="baseAction">
+        <action id="backupDatabases">
             <require-action id="disablePuppetd"></require-action>
-        </action>
-
-        <action id="backupDatabases" subclass="baseAction">
-            <!-- since we subclass "baseAction" we also require "disablePuppetd" -->
 
             <!-- TODO: Should this involve the installation of some artifact? -->
 
@@ -135,7 +128,8 @@
             </script>
         </action>
 
-        <action id="shutDownWebapp" subclass="baseAction" host="some.webapp.appServer">
+        <action id="shutDownWebapp" host="some.webapp.appServer">
+            <require-action id="disablePuppetd"></require-action>
             <require-action id="removeFromLoadBalancer"></require-action>
             <script>
             	<!-- should be CDATA/etc if this were real xml, but meh...-->
