@@ -88,6 +88,19 @@
         </systemtag>
     </systemtags> 
 
+    <!-- Definition of a policy we will enforce for this application. Could 
+      support a number of types, Puppet, or something we grow ourselves for
+      better RHQ integration, or both. -->
+    <policy>
+        <puppet>
+            <modules>somewebapppolicy.tar</modules>
+            <classes>
+                <class>mediawiki</class>
+                <class>http</class>
+            </classes>
+        </puppet>
+    </policy>
+
     <!-- 
       Small components we can re-use inside the larger user visible 'operations'. 
 
